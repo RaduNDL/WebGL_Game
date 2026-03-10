@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TURBO CITY</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Rajdhani', sans-serif;
+    }
+
+    #glCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #title-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0a0a0f 0%, #0d1a2e 50%, #0a0a0f 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.8s ease;
+    }
+
+    #title-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .title-glow {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(40px, 8vw, 90px);
+      font-weight: 900;
+      background: linear-gradient(90deg, #ff6b00, #ff0080, #7b00ff, #00d4ff, #ff6b00);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleShimmer 3s linear infinite;
+      text-shadow: none;
+      filter: drop-shadow(0 0 30px rgba(255, 107, 0, 0.8));
+      letter-spacing: 8px;
+      margin-bottom: 10px;
+    }
+
+    @keyframes titleShimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    .subtitle {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: clamp(14px, 2vw, 22px);
+      color: #88aacc;
+      letter-spacing: 12px;
+      text-transform: uppercase;
+      margin-bottom: 60px;
+    }
+
+    .start-btn {
+      pointer-events: all;
+      cursor: pointer;
+      background: transparent;
+      border: 2px solid #ff6b00;
+      color: #ff6b00;
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      padding: 16px 48px;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    }
+
+    .start-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #ff6b00;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .start-btn:hover { color: #000; }
+    .start-btn:hover::before { transform: scaleX(1); }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 32px;
+      margin-top: 48px;
+      padding: 24px 40px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      background: rgba(0, 20, 40, 0.6);
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .ctrl-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #88aacc;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    .key-badge {
+      background: rgba(0, 212, 255, 0.15);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      color: #00d4ff;
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      padding: 4px 10px;
+      min-width: 44px;
+      text-align: center;
+    }
+
+    #speedometer {
+      position: absolute;
+      bottom: 30px;
+      right: 40px;
+      text-align: right;
+    }
+
+    .speed-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 64px;
+      font-weight: 900;
+      color: #ff6b00;
+      line-height: 1;
+      text-shadow: 0 0 20px rgba(255, 107, 0, 0.6);
+    }
+
+    .speed-unit {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      color: #ff6b00aa;
+      letter-spacing: 4px;
+    }
+
+    #minimap {
+      position: absolute;
+      bottom: 30px;
+      left: 40px;
+      width: 160px;
+      height: 160px;
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      background: rgba(0, 10, 20, 0.8);
+      overflow: hidden;
+    }
+
+    #minimap canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .minimap-label {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      color: #00d4ff;
+      letter-spacing: 3px;
+    }
+
+    #top-hud {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .hud-pill {
+      background: rgba(0, 10, 20, 0.85);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      padding: 8px 20px;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      color: #00d4ff;
+      letter-spacing: 2px;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .hud-pill span { color: #ff6b00; font-weight: 700; }
+
+    #collision-flash {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 0, 60, 0.0);
+      pointer-events: none;
+      transition: background 0.1s ease;
+    }
+
+    #collision-flash.active {
+      background: rgba(255, 0, 60, 0.35);
+    }
+
+    #scanlines {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+              0deg,
+              transparent,
+              transparent 2px,
+              rgba(0,0,0,0.03) 2px,
+              rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .corner {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+    }
+    .corner-tl { top: 16px; left: 16px; border-top: 2px solid #00d4ff; border-left: 2px solid #00d4ff; }
+    .corner-tr { top: 16px; right: 16px; border-top: 2px solid #00d4ff; border-right: 2px solid #00d4ff; }
+    .corner-bl { bottom: 16px; left: 16px; border-bottom: 2px solid #00d4ff; border-left: 2px solid #00d4ff; }
+    .corner-br { bottom: 16px; right: 16px; border-bottom: 2px solid #00d4ff; border-right: 2px solid #00d4ff; }
+
+    #info-panel {
+      position: absolute;
+      top: 80px;
+      left: 40px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      color: rgba(136, 170, 204, 0.7);
+      line-height: 1.8;
+      letter-spacing: 1px;
+    }
+
+    #collision-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: #ff003c;
+      text-shadow: 0 0 20px rgba(255, 0, 60, 0.8);
+      letter-spacing: 6px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+
+    #collision-msg.show { opacity: 1; }
+  </style>
+</head>
+<body>
+<canvas id="glCanvas"></canvas>
+<div id="scanlines"></div>
+
+<div id="title-screen">
+  <div class="title-glow">TURBO CITY</div>
+  <div class="subtitle">WebGL Racing Experience</div>
+  <button class="start-btn" id="startBtn">START ENGINE</button>
+  <div class="controls-grid">
+    <div class="ctrl-item"><span class="key-badge">W/↑</span> Accelerate</div>
+    <div class="ctrl-item"><span class="key-badge">S/↓</span> Brake</div>
+    <div class="ctrl-item"><span class="key-badge">A/←</span> Turn Left</div>
+    <div class="ctrl-item"><span class="key-badge">D/→</span> Turn Right</div>
+    <div class="ctrl-item"><span class="key-badge">Q/E</span> Camera Orbit</div>
+    <div class="ctrl-item"><span class="key-badge">R/F</span> Camera Up/Down</div>
+    <div class="ctrl-item"><span class="key-badge">Z/X</span> Zoom In/Out</div>
+    <div class="ctrl-item"><span class="key-badge">L</span> Toggle Lights</div>
+  </div>
+</div>
+
+<div id="hud">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <div id="top-hud">
+    <div class="hud-pill">TIME <span id="raceTime">00:00</span></div>
+    <div class="hud-pill">COLLISIONS <span id="collCount">0</span></div>
+  </div>
+
+  <div id="info-panel">
+    TURBO CITY v1.0<br>
+    WebGL Racing Simulator<br>
+    <br>
+    WASD — Drive<br>
+    Q/E — Orbit Camera<br>
+    R/F — Camera Height<br>
+    Z/X — Zoom
+  </div>
+
+  <div id="speedometer">
+    <div class="speed-value" id="speedVal">0</div>
+    <div class="speed-unit">KM/H</div>
+  </div>
+
+  <div id="minimap">
+    <div class="minimap-label">MINIMAP</div>
+    <canvas id="minimapCanvas" width="160" height="160"></canvas>
+  </div>
+
+  <div id="collision-flash"></div>
+  <div id="collision-msg">⚠ COLLISION ⚠</div>
+</div>
+
+<script src="index.js"></script>
+</body>
+</html>
