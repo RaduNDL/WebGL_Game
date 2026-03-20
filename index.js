@@ -887,7 +887,7 @@ Game.prototype.render=function(){
         else self.drawCar(n.x,n.y,n.z,n.rot,n.tex,false);
     }
 };
-//121212
+//1212121212
 Game.prototype.drawCar=function(x,y,z,rot,tex,isPlayer){
     var gl=this.gl,L=this.L,self=this;
     var base=m4mul(m4tr(x,y,z),m4ry(rot));
@@ -916,3 +916,5 @@ window.addEventListener('load',function(){ window._game=new Game(); });
 // obiecte statice si circuit
 
 // obiect controlabil
+
+// obiecte in miscare
